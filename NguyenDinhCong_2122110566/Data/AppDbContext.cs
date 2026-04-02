@@ -11,5 +11,6 @@ namespace NguyenDinhCong_2122110566.Data
         {
         }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Product> Products { get; set; }
     }
 }

@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using NguyenDinhCong_2122110566.Data;
 using NguyenDinhCong_2122110566.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NguyenDinhCong_2122110566.Controllers
 {
@@ -20,7 +22,10 @@ namespace NguyenDinhCong_2122110566.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
-            var categories = await _context.Categories.AsNoTracking().ToListAsync();
+            var categories = await _context.Categories
+                .AsNoTracking()
+                .ToListAsync();
+
             return Ok(categories);
         }
 
@@ -28,7 +33,11 @@ namespace NguyenDinhCong_2122110566.Controllers
         [HttpGet("{id:int}")]
         public async Task<ActionResult<Category>> GetCategory(int id)
         {
-            var category = await _context.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
+            var category = await _context.Categories
+                .AsNoTracking()
+                .Include(c => c.Products)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (category == null) return NotFound();
             return Ok(category);
         }
@@ -46,13 +55,18 @@ namespace NguyenDinhCong_2122110566.Controllers
         }
 
         // PUT: api/Categories/5
+        // Clients should include the current RowVersion to support optimistic concurrency.
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category category)
         {
             if (id != category.Id) return BadRequest("Id in URL must match Id in body.");
             if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            _context.Entry(category).State = EntityState.Modified;
+            // Attach and mark modified while preserving RowVersion for concurrency
+            _context.Categories.Attach(category);
+            _context.Entry(category).Property(c => c.Name).IsModified = true;
+            _context.Entry(category).Property(c => c.Description).IsModified = true;
+            _context.Entry(category).Property(c => c.RowVersion).OriginalValue = category.RowVersion;
 
             try
             {
@@ -63,7 +77,8 @@ namespace NguyenDinhCong_2122110566.Controllers
             {
                 var exists = await _context.Categories.AnyAsync(c => c.Id == id);
                 if (!exists) return NotFound();
-                throw;
+
+                return Conflict(new { message = "The record you attempted to edit was modified by another user. Reload the entity and try again." });
             }
         }
 
