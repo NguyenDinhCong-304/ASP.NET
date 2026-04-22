@@ -1,38 +1,56 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace NguyenDinhCong_2122110566.Models
 {
     public class Product
     {
-        [Key]
-        public int Id { get; set; }
+        public long Id { get; set; }
 
-        [Required(ErrorMessage = "Name is required.")]
-        [StringLength(200, ErrorMessage = "Name cannot exceed 200 characters.")]
+        [Required(ErrorMessage = "BrandId không được để trống")]
+        public long BrandId { get; set; }
+
+        [Required(ErrorMessage = "CategoryId không được để trống")]
+        public long CategoryId { get; set; }
+
+        [Required(ErrorMessage = "Tên sản phẩm không được để trống")]
+        [StringLength(300, ErrorMessage = "Tên sản phẩm tối đa 300 ký tự")]
         public string Name { get; set; }
 
-        [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters.")]
-        public string Description { get; set; }
+        [Required(ErrorMessage = "Slug không được để trống")]
+        [StringLength(300)]
+        public string Slug { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        [Range(0, 99999999.99, ErrorMessage = "Price must be non-negative.")]
+        [Required(ErrorMessage = "Thumbnail không được để trống")]
+        public string Thumbnail { get; set; }
+
+        [Required(ErrorMessage = "Nội dung sản phẩm không được để trống")]
+        public string Content { get; set; }
+
+        [StringLength(500, ErrorMessage = "Mô tả tối đa 500 ký tự")]
+        public string? Description { get; set; }
+
+        [Range(0, double.MaxValue, ErrorMessage = "Giá phải >= 0")]
         public decimal Price { get; set; }
 
-        [Range(0, int.MaxValue, ErrorMessage = "Stock must be non-negative.")]
-        public int Stock { get; set; }
+        [Range(0, 1, ErrorMessage = "Status chỉ được 0 hoặc 1")]
+        public int Status { get; set; }
 
-        // Foreign key to Category
-        public int CategoryId { get; set; }
+        public DateTime CreatedAt { get; set; }
 
-        [ForeignKey(nameof(CategoryId))]
+        [JsonIgnore]
+        public Brand? Brand { get; set; }
 
-        // Image URL for the product (optional)
-        //[StringLength(2048, ErrorMessage = "Image URL cannot exceed 2048 characters.")]
-        //[Url(ErrorMessage = "Image must be a valid URL.")]
-        //public string Image { get; set; }
+        [JsonIgnore]
         public Category? Category { get; set; }
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        [JsonIgnore]
+        public ICollection<ProductImage>? Images { get; set; }
+
+        [JsonIgnore]
+        public ICollection<ProductSale>? Sales { get; set; }
+
+        [JsonIgnore]
+        public ICollection<ProductAttributeValue>? Attributes { get; set; }
     }
 }

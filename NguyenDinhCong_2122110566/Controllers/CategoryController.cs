@@ -2,51 +2,59 @@
 using Microsoft.EntityFrameworkCore;
 using NguyenDinhCong_2122110566.Data;
 using NguyenDinhCong_2122110566.Models;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace NguyenDinhCong_2122110566.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
-    public class CategoriesController : ControllerBase
+    [ApiController]
+    public class CategoryController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public CategoriesController(AppDbContext context)
+        public CategoryController(AppDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/Categories
+        // ===================================
+        // GET: api/category
+        // Lấy tất cả danh mục
+        // ===================================
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Category>>> GetCategories()
         {
-            var categories = await _context.Categories
-                .AsNoTracking()
+            return await _context.Categories
+                .OrderBy(c => c.SortOrder)
                 .ToListAsync();
-
-            return Ok(categories);
         }
 
-        // GET: api/Categories/5
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Category>> GetCategory(int id)
+        // ===================================
+        // GET: api/category/5
+        // Lấy danh mục theo ID
+        // ===================================
+        [HttpGet("{id}")]
+        public async Task<ActionResult<Category>> GetCategory(long id)
         {
             var category = await _context.Categories
-                .AsNoTracking()
                 .Include(c => c.Products)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (category == null) return NotFound();
-            return Ok(category);
+            if (category == null)
+            {
+                return NotFound();
+            }
+
+            return category;
         }
 
-        // POST: api/Categories
+        // ===================================
+        // POST: api/category
+        // Thêm danh mục
+        // ===================================
         [HttpPost]
-        public async Task<ActionResult<Category>> CreateCategory([FromBody] Category category)
+        public async Task<ActionResult<Category>> CreateCategory(Category category)
         {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            category.CreatedAt = DateTime.Now;
 
             _context.Categories.Add(category);
             await _context.SaveChangesAsync();
@@ -54,45 +62,62 @@ namespace NguyenDinhCong_2122110566.Controllers
             return CreatedAtAction(nameof(GetCategory), new { id = category.Id }, category);
         }
 
-        // PUT: api/Categories/5
-        // Clients should include the current RowVersion to support optimistic concurrency.
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateCategory(int id, [FromBody] Category category)
+        // ===================================
+        // PUT: api/category/5
+        // Cập nhật danh mục
+        // ===================================
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCategory(long id, Category category)
         {
-            if (id != category.Id) return BadRequest("Id in URL must match Id in body.");
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+            var cat = await _context.Categories.FindAsync(id);
 
-            // Attach and mark modified while preserving RowVersion for concurrency
-            _context.Categories.Attach(category);
-            _context.Entry(category).Property(c => c.Name).IsModified = true;
-            _context.Entry(category).Property(c => c.Description).IsModified = true;
-            _context.Entry(category).Property(c => c.RowVersion).OriginalValue = category.RowVersion;
+            if (cat == null)
+                return NotFound();
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                var exists = await _context.Categories.AnyAsync(c => c.Id == id);
-                if (!exists) return NotFound();
+            cat.Name = category.Name;
+            cat.Slug = category.Slug;
+            cat.Image = category.Image;
+            cat.ParentId = category.ParentId;
+            cat.SortOrder = category.SortOrder;
+            cat.Description = category.Description;
+            cat.Status = category.Status;
 
-                return Conflict(new { message = "The record you attempted to edit was modified by another user. Reload the entity and try again." });
-            }
+            await _context.SaveChangesAsync();
+
+            return Ok(cat);
         }
 
-        // DELETE: api/Categories/5
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteCategory(int id)
+        // ===================================
+        // DELETE: api/category/5
+        // Xóa danh mục
+        // ===================================
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCategory(long id)
         {
             var category = await _context.Categories.FindAsync(id);
-            if (category == null) return NotFound();
+
+            if (category == null)
+            {
+                return NotFound();
+            }
 
             _context.Categories.Remove(category);
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // ===================================
+        // GET: api/category/parent/0
+        // Lấy danh mục theo parent
+        // ===================================
+        [HttpGet("parent/{parentId}")]
+        public async Task<ActionResult<IEnumerable<Category>>> GetCategoryByParent(long parentId)
+        {
+            return await _context.Categories
+                .Where(c => c.ParentId == parentId)
+                .OrderBy(c => c.SortOrder)
+                .ToListAsync();
         }
     }
 }

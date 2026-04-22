@@ -1,8 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NguyenDinhCong_2122110566.Data;
 using NguyenDinhCong_2122110566.Models;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NguyenDinhCong_2122110566.Controllers
@@ -25,6 +26,7 @@ namespace NguyenDinhCong_2122110566.Controllers
             var products = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
+                .Include(p => p.Brand)
                 .ToListAsync();
 
             return Ok(products);
@@ -37,6 +39,7 @@ namespace NguyenDinhCong_2122110566.Controllers
             var product = await _context.Products
                 .AsNoTracking()
                 .Include(p => p.Category)
+                .Include(p => p.Brand)
                 .FirstOrDefaultAsync(p => p.Id == id);
 
             if (product == null) return NotFound();
@@ -44,47 +47,79 @@ namespace NguyenDinhCong_2122110566.Controllers
         }
 
         // POST: api/Products
-        [HttpPost]
-        public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
-        {
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+        //[HttpPost]
+        //public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
+        //{
+        //    if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            _context.Products.Add(product);
-            await _context.SaveChangesAsync();
+        //    // Validate Category
+        //    var categoryExists = await _context.Categories.AnyAsync(c => c.Id == product.CategoryId);
+        //    if (!categoryExists) return BadRequest(new { CategoryId = "Không tìm thấy danh mục." });
 
-            return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
-        }
+        //    // Validate Brand if provided
+        //    if (product.BrandId.HasValue)
+        //    {
+        //        var brandExists = await _context.Set<Brand>().AnyAsync(b => b.Id == product.BrandId.Value);
+        //        if (!brandExists) return BadRequest(new { BrandId = "Không tìm thấy thương hiệu." });
+        //    }
+
+        //    _context.Products.Add(product);
+        //    await _context.SaveChangesAsync();
+
+        //    return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+        //}
 
         // PUT: api/Products/5
-        [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updated)
-        {
-            if (id != updated.Id) return BadRequest("Id in URL must match Id in body.");
-            if (!ModelState.IsValid) return BadRequest(ModelState);
+        // Expects the client to provide current RowVersion for optimistic concurrency (byte[] -> base64 in JSON)
+        //[HttpPut("{id:int}")]
+        //public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updated)
+        //{
+        //    if (id != updated.Id) return BadRequest("ID trong URL và form không trùng khớp.");
+        //    if (!ModelState.IsValid) return BadRequest(ModelState);
 
-            var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
+        //    var product = await _context.Products.FindAsync(id);
+        //    if (product == null) return NotFound();
 
-            // Update allowed fields explicitly
-            product.Name = updated.Name;
-            product.Description = updated.Description;
-            product.Price = updated.Price;
-            product.Stock = updated.Stock;
-            product.CategoryId = updated.CategoryId;
+        //    // Validate Category
+        //    var categoryExists = await _context.Categories.AnyAsync(c => c.Id == updated.CategoryId);
+        //    if (!categoryExists) return BadRequest(new { CategoryId = "Không tìm thấy danh mục." });
 
-            try
-            {
-                await _context.SaveChangesAsync();
-                return NoContent();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!await _context.Products.AnyAsync(p => p.Id == id))
-                    return NotFound();
+        //    // Validate Brand if provided
+        //    if (updated.BrandId.HasValue)
+        //    {
+        //        var brandExists = await _context.Set<Brand>().AnyAsync(b => b.Id == updated.BrandId.Value);
+        //        if (!brandExists) return BadRequest(new { BrandId = "Không tìm thấy thương hiệu." });
+        //    }
 
-                throw;
-            }
-        }
+        //    // Set original RowVersion for concurrency check (client must send RowVersion)
+        //    if (updated.RowVersion != null)
+        //    {
+        //        _context.Entry(product).Property(p => p.RowVersion).OriginalValue = updated.RowVersion;
+        //    }
+
+        //    // Update allowed fields explicitly
+        //    product.Name = updated.Name;
+        //    product.Description = updated.Description;
+        //    product.Price = updated.Price;
+        //    product.Stock = updated.Stock;
+        //    product.CategoryId = updated.CategoryId;
+        //    product.BrandId = updated.BrandId;
+        //    product.ImageUrl = updated.ImageUrl;
+
+        //    try
+        //    {
+        //        await _context.SaveChangesAsync();
+        //        return NoContent();
+        //    }
+        //    catch (DbUpdateConcurrencyException)
+        //    {
+        //        // If product no longer exists
+        //        if (!await _context.Products.AnyAsync(p => p.Id == id))
+        //            return NotFound();
+
+        //        return Conflict(new { message = "Sản phẩm đã được sửa bởi người khác. Tải và thử lại." });
+        //    }
+        //}
 
         // DELETE: api/Products/5
         [HttpDelete("{id:int}")]

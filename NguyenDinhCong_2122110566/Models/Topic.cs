@@ -1,27 +1,19 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace NguyenDinhCong_2122110566.Models
 {
-    public class Category
+    public class Topic
     {
-        [Key]
         public long Id { get; set; }
 
-        [Required(ErrorMessage = "Tên danh mục không được để trống")]
-        [StringLength(200, ErrorMessage = "Tên danh mục tối đa 200 ký tự")]
+        [Required(ErrorMessage = "Tên chủ đề không được để trống")]
+        [StringLength(200, ErrorMessage = "Tên chủ đề tối đa 200 ký tự")]
         public string Name { get; set; }
 
         [Required(ErrorMessage = "Slug không được để trống")]
         [StringLength(200)]
         public string Slug { get; set; }
-
-        [Required(ErrorMessage = "Hình ảnh không được để trống")]
-        public string Image { get; set; }
-
-        public long? ParentId { get; set; }
 
         [Range(0, int.MaxValue, ErrorMessage = "SortOrder phải >= 0")]
         public int SortOrder { get; set; }
@@ -35,6 +27,6 @@ namespace NguyenDinhCong_2122110566.Models
         public DateTime CreatedAt { get; set; }
 
         [JsonIgnore]
-        public ICollection<Product>? Products { get; set; }
+        public ICollection<Post>? Posts { get; set; }
     }
 }
