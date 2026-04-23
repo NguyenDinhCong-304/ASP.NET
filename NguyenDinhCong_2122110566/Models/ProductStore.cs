@@ -7,16 +7,18 @@ namespace NguyenDinhCong_2122110566.Models
     {
         public long Id { get; set; }
 
-        [Required(ErrorMessage = "ProductId không được để trống")]
+        [Required]
         public long ProductId { get; set; }
 
-        [Required(ErrorMessage = "Giá nhập không được để trống")]
-        [Range(0, double.MaxValue, ErrorMessage = "Giá nhập phải >= 0")]
+        [Required]
+        [Range(0, double.MaxValue)]
         public decimal PriceRoot { get; set; }
 
-        [Required(ErrorMessage = "Số lượng không được để trống")]
-        [Range(0, int.MaxValue, ErrorMessage = "Số lượng phải >= 0")]
+        [Required]
+        [Range(0, int.MaxValue)]
         public int Qty { get; set; }
+
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore]
         public Product? Product { get; set; }

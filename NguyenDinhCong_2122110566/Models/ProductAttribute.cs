@@ -1,17 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using NguyenDinhCong_2122110566.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace NguyenDinhCong_2122110566.Models
+public class ProductAttribute
 {
-    public class ProductAttribute
-    {
-        public long Id { get; set; }
+    public long Id { get; set; }
 
-        [Required(ErrorMessage = "Tên thuộc tính không được để trống")]
-        [StringLength(200, ErrorMessage = "Tên thuộc tính tối đa 200 ký tự")]
-        public string Name { get; set; }
+    [Required, StringLength(200)]
+    public string Name { get; set; }
 
-        [JsonIgnore]
-        public ICollection<ProductAttributeValue>? ProductAttributes { get; set; }
-    }
+    // navigation
+    [JsonIgnore]
+    public ICollection<ProductAttributeValue>? Values { get; set; }
 }

@@ -3,114 +3,138 @@ using Microsoft.EntityFrameworkCore;
 using NguyenDinhCong_2122110566.Data;
 using NguyenDinhCong_2122110566.Models;
 
-namespace NguyenDinhCong_2122110566.Controllers
+[Route("api/[controller]")]
+[ApiController]
+public class BrandController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    public class BrandController : ControllerBase
+    private readonly AppDbContext _context;
+
+    public BrandController(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public BrandController(AppDbContext context)
+    // =====================
+    // GET ALL
+    // =====================
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var brands = await _context.Brands
+            .OrderBy(x => x.Name)
+            .ToListAsync();
+
+        return Ok(brands);
+    }
+
+    // =====================
+    // GET BY ID
+    // =====================
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(long id)
+    {
+        var brand = await _context.Brands
+            .Include(b => b.Products)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (brand == null)
+            return NotFound();
+
+        return Ok(brand);
+    }
+
+    // =====================
+    // CREATE
+    // =====================
+    [HttpPost]
+    public async Task<IActionResult> Create(Brand model)
+    {
+        _context.Brands.Add(model);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Tạo brand thành công" });
+    }
+
+    // =====================
+    // UPDATE
+    // =====================
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(long id, Brand updated)
+    {
+        var brand = await _context.Brands.FindAsync(id);
+
+        if (brand == null)
+            return NotFound();
+
+        brand.Name = updated.Name;
+        brand.Slug = updated.Slug;
+        brand.Logo = updated.Logo;
+        brand.Description = updated.Description;
+        brand.Country = updated.Country;
+        brand.Status = updated.Status;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Cập nhật brand thành công" });
+    }
+
+    // =====================
+    // DELETE
+    // =====================
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(long id)
+    {
+        var brand = await _context.Brands.FindAsync(id);
+
+        if (brand == null)
+            return NotFound();
+
+        _context.Brands.Remove(brand);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Xóa brand thành công" });
+    }
+
+    // =====================
+    // CHANGE STATUS
+    // =====================
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> ChangeStatus(long id, [FromBody] int status)
+    {
+        var brand = await _context.Brands.FindAsync(id);
+
+        if (brand == null)
+            return NotFound();
+
+        brand.Status = status;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Cập nhật status thành công" });
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> UploadLogo([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file uploaded");
+
+        var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/brand");
+
+        if (!Directory.Exists(folder))
+            Directory.CreateDirectory(folder);
+
+        var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+
+        var path = Path.Combine(folder, fileName);
+
+        using (var stream = new FileStream(path, FileMode.Create))
         {
-            _context = context;
+            await file.CopyToAsync(stream);
         }
 
-        // ===============================
-        // GET: api/brand
-        // Lấy tất cả thương hiệu
-        // ===============================
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Brand>>> GetBrands()
-        {
-            return await _context.Brands
-                .OrderBy(b => b.Name)
-                .ToListAsync();
-        }
+        var url = $"/images/brand/{fileName}";
 
-        // ===============================
-        // GET: api/brand/5
-        // Lấy brand theo id
-        // ===============================
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Brand>> GetBrand(long id)
-        {
-            var brand = await _context.Brands
-                .Include(b => b.Products)
-                .FirstOrDefaultAsync(b => b.Id == id);
-
-            if (brand == null)
-            {
-                return NotFound();
-            }
-
-            return brand;
-        }
-
-        // ===============================
-        // POST: api/brand
-        // Thêm brand
-        // ===============================
-        [HttpPost]
-        public async Task<ActionResult<Brand>> CreateBrand(Brand brand)
-        {
-            _context.Brands.Add(brand);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetBrand), new { id = brand.Id }, brand);
-        }
-
-        // ===============================
-        // PUT: api/brand/5
-        // Cập nhật brand
-        // ===============================
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateBrand(long id, Brand brand)
-        {
-            if (id != brand.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(brand).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Brands.Any(e => e.Id == id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }
-
-        // ===============================
-        // DELETE: api/brand/5
-        // Xóa brand
-        // ===============================
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteBrand(long id)
-        {
-            var brand = await _context.Brands.FindAsync(id);
-
-            if (brand == null)
-            {
-                return NotFound();
-            }
-
-            _context.Brands.Remove(brand);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
+        return Ok(new { url });
     }
 }

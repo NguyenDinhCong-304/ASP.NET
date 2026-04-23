@@ -1,32 +1,27 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using NguyenDinhCong_2122110566.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
-namespace NguyenDinhCong_2122110566.Models
+public class Topic
 {
-    public class Topic
-    {
-        public long Id { get; set; }
+    public long Id { get; set; }
 
-        [Required(ErrorMessage = "Tên chủ đề không được để trống")]
-        [StringLength(200, ErrorMessage = "Tên chủ đề tối đa 200 ký tự")]
-        public string Name { get; set; }
+    [Required, StringLength(200)]
+    public string Name { get; set; }
 
-        [Required(ErrorMessage = "Slug không được để trống")]
-        [StringLength(200)]
-        public string Slug { get; set; }
+    [Required, StringLength(200)]
+    public string Slug { get; set; }
 
-        [Range(0, int.MaxValue, ErrorMessage = "SortOrder phải >= 0")]
-        public int SortOrder { get; set; }
+    [Range(0, int.MaxValue)]
+    public int SortOrder { get; set; } = 0;
 
-        [StringLength(500, ErrorMessage = "Mô tả tối đa 500 ký tự")]
-        public string? Description { get; set; }
+    [StringLength(500)]
+    public string? Description { get; set; }
 
-        [Range(0, 1, ErrorMessage = "Status chỉ được 0 hoặc 1")]
-        public int Status { get; set; }
+    public int Status { get; set; } = 1; // 1 = Active, 0 = Hidden
 
-        public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [JsonIgnore]
-        public ICollection<Post>? Posts { get; set; }
-    }
+    [JsonIgnore]
+    public ICollection<Post>? Posts { get; set; }
 }

@@ -11,6 +11,7 @@ namespace NguyenDinhCong_2122110566.Data
         {
         }
 
+
         public DbSet<Category> Categories { get; set; }
 
         public DbSet<Product> Products { get; set; }
@@ -31,7 +32,7 @@ namespace NguyenDinhCong_2122110566.Data
 
         public DbSet<ProductAttribute> ProductAttributes { get; set; }
 
-        public DbSet<ProductAttributeValue> ProductAttributeValue { get; set; }
+        public DbSet<ProductAttributeValue> ProductAttributeValues { get; set; }
 
         public DbSet<Order> Orders { get; set; }
 
@@ -48,5 +49,40 @@ namespace NguyenDinhCong_2122110566.Data
         public DbSet<Setting> Settings { get; set; }
 
         public DbSet<Banner> Banners { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<Category>()
+                .HasOne<Category>()
+                .WithMany()
+                .HasForeignKey(c => c.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<Order>()
+                .HasMany(o => o.OrderDetails)
+                .WithOne(d => d.Order)
+                .HasForeignKey(d => d.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Post>()
+                .HasIndex(p => p.Slug)
+                .IsUnique();
+
+            modelBuilder.Entity<Product>()
+                .HasIndex(p => p.Slug)
+                .IsUnique();
+
+            modelBuilder.Entity<ProductAttributeValue>()
+                .HasOne(v => v.Product)
+                .WithMany(p => p.Attributes)
+                .HasForeignKey(v => v.ProductId);
+
+            modelBuilder.Entity<ProductAttributeValue>()
+                .HasOne(v => v.Attribute)
+                .WithMany(a => a.Values)
+                .HasForeignKey(v => v.AttributeId);
+        }
     }
 }

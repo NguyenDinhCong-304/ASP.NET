@@ -74,6 +74,22 @@ namespace NguyenDinhCong_2122110566.Controllers
             if (cat == null)
                 return NotFound();
 
+            // nếu ảnh thay đổi → xóa ảnh cũ
+            if (!string.IsNullOrEmpty(category.Image) &&
+                category.Image != cat.Image)
+            {
+                var oldPath = Path.Combine(
+                    Directory.GetCurrentDirectory(),
+                    "wwwroot/images",
+                    cat.Image.TrimStart('/')
+                );
+
+                if (System.IO.File.Exists(oldPath))
+                {
+                    System.IO.File.Delete(oldPath);
+                }
+            }
+
             cat.Name = category.Name;
             cat.Slug = category.Slug;
             cat.Image = category.Image;
@@ -118,6 +134,52 @@ namespace NguyenDinhCong_2122110566.Controllers
                 .Where(c => c.ParentId == parentId)
                 .OrderBy(c => c.SortOrder)
                 .ToListAsync();
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
+
+            var folder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+
+            if (!Directory.Exists(folder))
+            {
+                Directory.CreateDirectory(folder);
+            }
+
+            var fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+            var path = Path.Combine(folder, fileName);
+
+            using (var stream = new FileStream(path, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var url = $"/images/{fileName}";
+
+            return Ok(new { url });
+        }
+
+        [HttpDelete("delete-image")]
+        public IActionResult DeleteImage([FromQuery] string imagePath)
+        {
+            if (string.IsNullOrEmpty(imagePath))
+                return BadRequest("No image");
+
+            var fullPath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "wwwroot",
+                imagePath.TrimStart('/')
+            );
+
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
+
+            return Ok();
         }
     }
 }

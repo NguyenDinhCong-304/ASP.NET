@@ -2,136 +2,192 @@
 using Microsoft.EntityFrameworkCore;
 using NguyenDinhCong_2122110566.Data;
 using NguyenDinhCong_2122110566.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using NguyenDinhCong_2122110566.Enums;
 
-namespace NguyenDinhCong_2122110566.Controllers
+[Route("api/admin/[controller]")]
+[ApiController]
+public class ProductController : ControllerBase
 {
-    [ApiController]
-    [Route("api/[controller]")]
-    public class ProductsController : ControllerBase
+    private readonly AppDbContext _context;
+
+    public ProductController(AppDbContext context)
     {
-        private readonly AppDbContext _context;
+        _context = context;
+    }
 
-        public ProductsController(AppDbContext context)
+    // =========================
+    // GET ALL PRODUCTS (ADMIN)
+    // =========================
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var products = await _context.Products
+            .Include(p => p.Brand)
+            .Include(p => p.Category)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        return Ok(products);
+    }
+
+    // =========================
+    // GET BY ID + ATTRIBUTE
+    // =========================
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(long id)
+    {
+        var product = await _context.Products
+            .Include(p => p.Brand)
+            .Include(p => p.Category)
+            .Include(p => p.Attributes)
+                .ThenInclude(a => a.Attribute)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (product == null)
+            return NotFound(new { message = "Không tìm thấy sản phẩm" });
+
+        return Ok(product);
+    }
+
+    // =========================
+    // CREATE PRODUCT
+    // =========================
+    [HttpPost]
+    public async Task<IActionResult> Create(Product product)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        product.CreatedAt = DateTime.UtcNow;
+
+        if (string.IsNullOrEmpty(product.Slug))
         {
-            _context = context;
+            product.Slug = product.Name
+                .ToLower()
+                .Trim()
+                .Replace(" ", "-");
         }
 
-        // GET: api/Products
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProducts()
+        product.Status = ProductStatus.Active;
+
+        _context.Products.Add(product);
+        await _context.SaveChangesAsync();
+
+        return Ok(new
         {
-            var products = await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Brand)
-                .ToListAsync();
+            message = "Tạo sản phẩm thành công",
+            product.Id
+        });
+    }
 
-            return Ok(products);
-        }
+    // =========================
+    // UPDATE PRODUCT
+    // =========================
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(long id, Product updatedProduct)
+    {
+        if (id != updatedProduct.Id)
+            return BadRequest(new { message = "ID không khớp" });
 
-        // GET: api/Products/5
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Product>> GetProduct(int id)
+        var product = await _context.Products.FindAsync(id);
+
+        if (product == null)
+            return NotFound(new { message = "Không tìm thấy sản phẩm" });
+
+        product.BrandId = updatedProduct.BrandId;
+        product.CategoryId = updatedProduct.CategoryId;
+        product.Name = updatedProduct.Name;
+        product.Slug = updatedProduct.Slug;
+        product.Thumbnail = updatedProduct.Thumbnail;
+        product.Content = updatedProduct.Content;
+        product.Description = updatedProduct.Description;
+        product.Price = updatedProduct.Price;
+        product.Status = updatedProduct.Status;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Cập nhật sản phẩm thành công" });
+    }
+
+    // =========================
+    // DELETE PRODUCT
+    // =========================
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(long id)
+    {
+        var product = await _context.Products
+            .Include(p => p.Attributes)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (product == null)
+            return NotFound(new { message = "Không tìm thấy sản phẩm" });
+
+        _context.Products.Remove(product);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Xóa sản phẩm thành công" });
+    }
+
+    // =========================
+    // CHANGE STATUS
+    // =========================
+    [HttpPatch("{id}/status")]
+    public async Task<IActionResult> ChangeStatus(long id, [FromBody] ProductStatus status)
+    {
+        var product = await _context.Products.FindAsync(id);
+
+        if (product == null)
+            return NotFound(new { message = "Không tìm thấy sản phẩm" });
+
+        product.Status = status;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new
         {
-            var product = await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.Brand)
-                .FirstOrDefaultAsync(p => p.Id == id);
+            message = "Cập nhật trạng thái thành công",
+            status
+        });
+    }
 
-            if (product == null) return NotFound();
-            return Ok(product);
-        }
+    // ==================================================
+    // ATTRIBUTE VALUE (MỨC 1 - XỬ LÝ TRONG PRODUCT)
+    // ==================================================
 
-        // POST: api/Products
-        //[HttpPost]
-        //public async Task<ActionResult<Product>> CreateProduct([FromBody] Product product)
-        //{
-        //    if (!ModelState.IsValid) return BadRequest(ModelState);
+    // ADD ATTRIBUTE VALUE
+    [HttpPost("{productId}/attributes")]
+    public async Task<IActionResult> AddAttributeValue(long productId, ProductAttributeValue model)
+    {
+        var product = await _context.Products.FindAsync(productId);
 
-        //    // Validate Category
-        //    var categoryExists = await _context.Categories.AnyAsync(c => c.Id == product.CategoryId);
-        //    if (!categoryExists) return BadRequest(new { CategoryId = "Không tìm thấy danh mục." });
+        if (product == null)
+            return NotFound(new { message = "Không tìm thấy sản phẩm" });
 
-        //    // Validate Brand if provided
-        //    if (product.BrandId.HasValue)
-        //    {
-        //        var brandExists = await _context.Set<Brand>().AnyAsync(b => b.Id == product.BrandId.Value);
-        //        if (!brandExists) return BadRequest(new { BrandId = "Không tìm thấy thương hiệu." });
-        //    }
+        model.ProductId = productId;
 
-        //    _context.Products.Add(product);
-        //    await _context.SaveChangesAsync();
+        _context.ProductAttributeValues.Add(model);
+        await _context.SaveChangesAsync();
 
-        //    return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
-        //}
-
-        // PUT: api/Products/5
-        // Expects the client to provide current RowVersion for optimistic concurrency (byte[] -> base64 in JSON)
-        //[HttpPut("{id:int}")]
-        //public async Task<IActionResult> UpdateProduct(int id, [FromBody] Product updated)
-        //{
-        //    if (id != updated.Id) return BadRequest("ID trong URL và form không trùng khớp.");
-        //    if (!ModelState.IsValid) return BadRequest(ModelState);
-
-        //    var product = await _context.Products.FindAsync(id);
-        //    if (product == null) return NotFound();
-
-        //    // Validate Category
-        //    var categoryExists = await _context.Categories.AnyAsync(c => c.Id == updated.CategoryId);
-        //    if (!categoryExists) return BadRequest(new { CategoryId = "Không tìm thấy danh mục." });
-
-        //    // Validate Brand if provided
-        //    if (updated.BrandId.HasValue)
-        //    {
-        //        var brandExists = await _context.Set<Brand>().AnyAsync(b => b.Id == updated.BrandId.Value);
-        //        if (!brandExists) return BadRequest(new { BrandId = "Không tìm thấy thương hiệu." });
-        //    }
-
-        //    // Set original RowVersion for concurrency check (client must send RowVersion)
-        //    if (updated.RowVersion != null)
-        //    {
-        //        _context.Entry(product).Property(p => p.RowVersion).OriginalValue = updated.RowVersion;
-        //    }
-
-        //    // Update allowed fields explicitly
-        //    product.Name = updated.Name;
-        //    product.Description = updated.Description;
-        //    product.Price = updated.Price;
-        //    product.Stock = updated.Stock;
-        //    product.CategoryId = updated.CategoryId;
-        //    product.BrandId = updated.BrandId;
-        //    product.ImageUrl = updated.ImageUrl;
-
-        //    try
-        //    {
-        //        await _context.SaveChangesAsync();
-        //        return NoContent();
-        //    }
-        //    catch (DbUpdateConcurrencyException)
-        //    {
-        //        // If product no longer exists
-        //        if (!await _context.Products.AnyAsync(p => p.Id == id))
-        //            return NotFound();
-
-        //        return Conflict(new { message = "Sản phẩm đã được sửa bởi người khác. Tải và thử lại." });
-        //    }
-        //}
-
-        // DELETE: api/Products/5
-        [HttpDelete("{id:int}")]
-        public async Task<IActionResult> DeleteProduct(int id)
+        return Ok(new
         {
-            var product = await _context.Products.FindAsync(id);
-            if (product == null) return NotFound();
+            message = "Thêm thuộc tính thành công",
+            model
+        });
+    }
 
-            _context.Products.Remove(product);
-            await _context.SaveChangesAsync();
+    // DELETE ATTRIBUTE VALUE
+    [HttpDelete("{productId}/attributes/{id}")]
+    public async Task<IActionResult> DeleteAttributeValue(long productId, long id)
+    {
+        var value = await _context.ProductAttributeValues
+            .FirstOrDefaultAsync(x => x.Id == id && x.ProductId == productId);
 
-            return NoContent();
-        }
+        if (value == null)
+            return NotFound(new { message = "Không tìm thấy thuộc tính" });
+
+        _context.ProductAttributeValues.Remove(value);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Xóa thuộc tính thành công" });
     }
 }

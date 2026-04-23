@@ -1,5 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using NguyenDinhCong_2122110566.Enums;
+using static OrderController;
 
 namespace NguyenDinhCong_2122110566.Models
 {
@@ -30,7 +32,7 @@ namespace NguyenDinhCong_2122110566.Models
         public string? Note { get; set; }
 
         [Range(0, 5, ErrorMessage = "Status không hợp lệ")]
-        public int Status { get; set; }
+        public OrderStatus Status { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
+using NguyenDinhCong_2122110566.Enums;
 
 namespace NguyenDinhCong_2122110566.Models
 {
@@ -28,11 +29,11 @@ namespace NguyenDinhCong_2122110566.Models
         public string? Description { get; set; }
 
         [Range(0, 1, ErrorMessage = "Status chỉ được 0 hoặc 1")]
-        public int Status { get; set; }
+        public PostStatus Status { get; set; } = PostStatus.Active;
 
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime UpdatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
         [JsonIgnore]
         public Topic? Topic { get; set; }
